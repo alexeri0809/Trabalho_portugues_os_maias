@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O Impostor em Os Maias</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=IM+Fell+English:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0a07;
+    --paper: #f5edd8;
+    --ink: #1a1209;
+    --gold: #c9a227;
+    --gold-light: #e8c55a;
+    --red: #8b1a1a;
+    --green: #1a4a2e;
+    --cream: #fdf6e3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Crimson Text', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: var(--paper);
+  }
+
+  /* noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.3;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; padding: 1.5rem 1rem 3rem; animation: fadeIn 0.5s ease; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 2.5rem; }
+  .screen.center { justify-content: center; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── TYPOGRAPHY ── */
+  h1.main-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 4.2rem);
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.05;
+    color: var(--gold);
+    text-shadow: 0 0 60px rgba(201,162,39,0.3), 2px 2px 0 rgba(0,0,0,0.5);
+  }
+  h1.main-title em { font-style: italic; color: var(--paper); display: block; font-size: 0.65em; letter-spacing: 0.05em; text-shadow: none; }
+
+  h2.title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 700;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 0.4rem;
+  }
+
+  /* ── ORNAMENTS ── */
+  .ornament { color: var(--gold); font-size: 1.2rem; letter-spacing: 0.4em; text-align: center; margin: 0.5rem 0; opacity: 0.65; }
+  .divider  { width: 100%; max-width: 480px; height: 1px; background: linear-gradient(to right, transparent, var(--gold), transparent); margin: 1rem auto; opacity: 0.4; }
+
+  /* ── CARDS / PAPER ── */
+  .card {
+    background: var(--cream);
+    color: var(--ink);
+    border-radius: 2px;
+    padding: 2rem 2.4rem;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.8);
+    position: relative;
+    border: 1px solid rgba(201,162,39,0.3);
+    margin-top: 1rem;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 7px;
+    border: 1px solid rgba(201,162,39,0.18);
+    pointer-events: none;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.22s;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+  .btn-gold  { background: var(--gold); color: var(--ink); box-shadow: 0 4px 18px rgba(201,162,39,0.3), 0 2px 0 rgba(0,0,0,0.4); }
+  .btn-gold:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 7px 24px rgba(201,162,39,0.45); }
+
+  .btn-dark  { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+  .btn-dark:hover:not(:disabled) { background: rgba(201,162,39,0.1); transform: translateY(-1px); }
+
+  .btn-red   { background: var(--red); color: var(--cream); box-shadow: 0 4px 18px rgba(139,26,26,0.35); }
+  .btn-red:hover:not(:disabled) { background: #a02020; transform: translateY(-2px); }
+
+  .btn-green { background: var(--green); color: var(--cream); box-shadow: 0 4px 18px rgba(26,74,46,0.35); }
+  .btn-green:hover:not(:disabled) { background: #1f5c38; transform: translateY(-2px); }
+
+  .btn-sm    { padding: 0.55rem 1.3rem; font-size: 0.8rem; }
+  .btn-full  { width: 100%; text-align: center; }
+
+  /* ── INPUTS ── */
+  .field { margin: 1rem 0; }
+  .field label {
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5a4a30;
+    margin-bottom: 0.35rem;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    font-family: 'Crimson Text', serif;
+    font-size: 1.05rem;
+    border: 1px solid rgba(90,74,48,0.3);
+    background: rgba(245,237,216,0.55);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--gold); background: rgba(253,246,227,0.9); }
+
+  /* ── LOBBY ── */
+  .room-code-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 0.3em;
+    text-align: center;
+    text-shadow: 0 0 40px rgba(201,162,39,0.4);
+    margin: 0.3rem 0;
+  }
+
+  .players-lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin: 1rem 0;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  .player-lobby-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid rgba(90,74,48,0.18);
+    background: rgba(245,237,216,0.4);
+    font-family: 'Crimson Text', serif;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+
+  .player-lobby-row .badge {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.4rem;
+    background: var(--gold);
+    color: var(--ink);
+  }
+
+  .badge-me { background: var(--green) !important; color: var(--cream) !important; }
+  .badge-host { background: var(--gold); }
+
+  /* ── REVEAL CARD ── */
+  .flip-container {
+    perspective: 1100px;
+    width: 300px;
+    height: 440px;
+    cursor: pointer;
+    margin: 1.2rem auto;
+  }
+
+  .flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.4,0,0.2,1);
+  }
+  .flip-inner.flipped { transform: rotateY(180deg); }
+
+  .flip-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.8rem 1.5rem;
+    text-align: center;
+  }
+
+  .flip-back {
+    background: linear-gradient(135deg, #1a1205 0%, #2a1e0a 50%, #1a1205 100%);
+    border: 2px solid var(--gold);
+    box-shadow: 0 16px 50px rgba(0,0,0,0.8);
+  }
+  .flip-back-pattern {
+    position: absolute;
+    inset: 10px;
+    border: 1px solid rgba(201,162,39,0.3);
+    background-image: repeating-linear-gradient(45deg,transparent,transparent 10px,rgba(201,162,39,0.04) 10px,rgba(201,162,39,0.04) 20px);
+    pointer-events: none;
+  }
+  .flip-back-inner { position: relative; z-index: 1; }
+  .flip-back-inner .eye { font-size: 2.8rem; margin-bottom: 0.8rem; opacity: 0.8; }
+  .flip-back-inner p { font-family: 'IM Fell English', serif; font-style: italic; color: var(--gold); font-size: 0.92rem; line-height: 1.6; }
+
+  .flip-front {
+    background: var(--cream);
+    border: 2px solid var(--gold);
+    transform: rotateY(180deg);
+    box-shadow: 0 16px 50px rgba(0,0,0,0.8);
+    color: var(--ink);
+  }
+  .flip-front.impostor { background: #160404; color: var(--paper); border-color: var(--red); }
+
+  .card-label { font-family: 'Playfair Display', serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); opacity: 0.7; }
+  .card-char-name { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 700; margin: 0.5rem 0; color: var(--ink); line-height: 1.2; }
+  .impostor .card-char-name { color: #ff6060; }
+  .card-char-desc { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.88rem; color: #5a4a30; line-height: 1.6; margin: 0.6rem 0; }
+  .impostor .card-char-desc { color: #cc8888; }
+  .card-objective { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid rgba(90,74,48,0.2); font-size: 0.82rem; color: #3a2e1e; line-height: 1.5; }
+  .impostor .card-objective { border-color: rgba(139,26,26,0.3); color: #cc8888; }
+  .card-objective strong { font-family: 'Playfair Display', serif; display: block; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.25rem; }
+
+  .clue-box {
+    background: rgba(139,26,26,0.18);
+    border: 1px solid rgba(224,80,80,0.3);
+    padding: 0.6rem 0.8rem;
+    margin: 0.6rem 0;
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.86rem;
+    color: #f0a0a0;
+    line-height: 1.5;
+  }
+  .clue-box strong { display: block; font-family: 'Playfair Display', serif; font-style: normal; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: #e05050; margin-bottom: 0.2rem; }
+
+  .pulse-hint {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: rgba(201,162,39,0.55);
+    font-size: 0.88rem;
+    text-align: center;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  /* ── TASKS ── */
+  .task-card {
+    background: var(--cream);
+    color: var(--ink);
+    width: 100%;
+    max-width: 560px;
+    padding: 2rem 2.5rem;
+    border: 1px solid rgba(201,162,39,0.4);
+    position: relative;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.55);
+    text-align: center;
+    animation: slideUp 0.35s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  .task-card::before { content:''; position:absolute; inset:6px; border:1px dashed rgba(90,74,48,0.18); pointer-events:none; }
+
+  .task-num  { font-family:'Playfair Display',serif; font-size:0.7rem; letter-spacing:0.2em; text-transform:uppercase; color:#8a7050; margin-bottom:0.4rem; }
+  .task-text { font-family:'IM Fell English',serif; font-size:1.3rem; font-style:italic; line-height:1.5; color:var(--ink); margin:0.5rem 0 1.2rem; }
+  .task-player-badge { font-family:'Playfair Display',serif; font-size:0.82rem; color:#6a5038; letter-spacing:0.08em; padding-top:0.8rem; border-top:1px solid rgba(90,74,48,0.15); }
+
+  /* ── PROGRESS DOTS ── */
+  .dots { display:flex; gap:0.4rem; justify-content:center; margin:0.5rem 0; }
+  .dot  { width:7px; height:7px; border-radius:50%; background:rgba(201,162,39,0.18); border:1px solid rgba(201,162,39,0.4); transition:background 0.3s; }
+  .dot.done   { background:var(--gold); }
+  .dot.active { background:var(--gold-light); box-shadow:0 0 7px var(--gold); }
+
+  /* ── VOTING ── */
+  .vote-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:0.5rem; max-width:640px; width:100%; margin:1rem 0; }
+  .vote-btn {
+    padding:0.75rem 0.5rem; font-family:'Crimson Text',serif; font-size:0.95rem;
+    background:rgba(245,237,216,0.05); color:var(--paper); border:1px solid rgba(201,162,39,0.22);
+    cursor:pointer; transition:all 0.2s; text-align:center; line-height:1.3;
+  }
+  .vote-btn:hover { background:rgba(201,162,39,0.1); border-color:var(--gold); transform:translateY(-2px); }
+  .vote-btn.selected { background:rgba(201,162,39,0.18); border-color:var(--gold); box-shadow:0 0 12px rgba(201,162,39,0.28); }
+  .vote-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+
+  /* ── TALLY ── */
+  .tally { display:flex; flex-direction:column; gap:0.5rem; max-width:460px; width:100%; margin:1rem 0; }
+  .tally-row { display:flex; align-items:center; gap:0.7rem; font-family:'Crimson Text',serif; font-size:1rem; }
+  .tally-name { width:140px; flex-shrink:0; color:var(--paper); }
+  .tally-bar-wrap { flex:1; height:9px; background:rgba(255,255,255,0.07); border-radius:2px; overflow:hidden; }
+  .tally-bar { height:100%; background:var(--gold); border-radius:2px; transition:width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .tally-count { width:20px; text-align:right; color:var(--gold); font-family:'Playfair Display',serif; }
+
+  /* ── RESULT ── */
+  .result-banner {
+    width:100%; max-width:540px; padding:2.5rem 2.5rem;
+    border:2px solid var(--gold); position:relative; text-align:center;
+    box-shadow:0 0 70px rgba(201,162,39,0.13); animation:revealBanner 0.7s ease;
+  }
+  @keyframes revealBanner { from{opacity:0;transform:scale(0.93)} to{opacity:1;transform:scale(1)} }
+  .result-banner.imp { border-color:var(--red); box-shadow:0 0 70px rgba(139,26,26,0.2); }
+  .result-banner::before { content:''; position:absolute; inset:7px; border:1px solid rgba(201,162,39,0.18); pointer-events:none; }
+  .result-banner.imp::before { border-color:rgba(139,26,26,0.18); }
+
+  .result-emoji    { font-size:3rem; margin-bottom:0.4rem; }
+  .result-title    { font-family:'Playfair Display',serif; font-size:2rem; font-weight:900; color:var(--gold); line-height:1.1; margin:0.4rem 0; }
+  .imp .result-title { color:#e05050; }
+  .result-sub      { font-family:'IM Fell English',serif; font-style:italic; font-size:1rem; color:rgba(253,246,227,0.65); margin:0.6rem 0 1.2rem; }
+  .result-reveal   { font-family:'Crimson Text',serif; font-size:1rem; color:var(--cream); background:rgba(0,0,0,0.28); padding:0.9rem 1.3rem; border:1px solid rgba(255,255,255,0.09); margin:0.8rem 0; text-align:left; }
+
+  /* ── WAITING ── */
+  .waiting-pill {
+    font-family:'IM Fell English',serif; font-style:italic;
+    font-size:0.9rem; color:rgba(253,246,227,0.4);
+    text-align:center; margin-top:0.8rem;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* ── STATUS BAR (reveal) ── */
+  .reveal-status { display:flex; flex-wrap:wrap; gap:0.4rem; justify-content:center; max-width:440px; margin:0.5rem 0; }
+  .reveal-chip {
+    font-family:'Playfair Display',serif; font-size:0.7rem; letter-spacing:0.06em;
+    padding:0.25rem 0.6rem; border:1px solid rgba(201,162,39,0.25); color:rgba(253,246,227,0.45);
+  }
+  .reveal-chip.done { border-color:var(--gold); color:var(--gold); background:rgba(201,162,39,0.08); }
+
+  /* ── DISCUSSION CARDS ── */
+  .disc-card { background:var(--cream); color:var(--ink); padding:1.4rem 1.8rem; border:1px solid rgba(201,162,39,0.35); box-shadow:0 8px 30px rgba(0,0,0,0.5); margin-bottom:0.7rem; max-width:540px; width:100%; animation:slideUp 0.35s ease; }
+  .disc-q { font-family:'IM Fell English',serif; font-style:italic; font-size:1.1rem; line-height:1.6; color:var(--ink); padding:0.7rem; border:1px solid rgba(90,74,48,0.12); background:rgba(245,237,216,0.5); text-align:center; }
+
+  /* ── UTILITIES ── */
+  .gap { display:flex; gap:0.7rem; justify-content:center; flex-wrap:wrap; margin-top:1rem; }
+  .small { font-family:'IM Fell English',serif; font-style:italic; font-size:0.85rem; color:rgba(253,246,227,0.38); text-align:center; }
+  .mt1 { margin-top:0.5rem; } .mt2 { margin-top:1rem; } .mt3 { margin-top:1.5rem; }
+  .error-msg { font-family:'Crimson Text',serif; font-size:0.95rem; color:#e05050; text-align:center; min-height:1.2em; margin-top:0.4rem; }
+
+  ::-webkit-scrollbar { width:3px; }
+  ::-webkit-scrollbar-thumb { background:rgba(201,162,39,0.3); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<!-- ══ INTRO ══════════════════════════════════════════════════ -->
+<div id="s-intro" class="screen center active">
+  <div class="ornament">✦ ✦ ✦</div>
+  <h1 class="main-title">O Impostor<em>em Os Maias</em></h1>
+  <div class="ornament">✦ ✦ ✦</div>
+  <div class="divider"></div>
+  <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:1rem;color:rgba(253,246,227,0.5);text-align:center;max-width:340px;line-height:1.7;margin:0.5rem 0 2rem;">
+    "Entre aparências e segredos,<br>um traidor se esconde."
+  </p>
+  <div class="gap">
+    <button class="btn btn-gold" onclick="go('s-create')">Criar Sala</button>
+    <button class="btn btn-dark" onclick="go('s-join')">Entrar numa Sala</button>
+  </div>
+  <p class="small mt2">Português 11.º ano · Escola Prof. Bento de Jesus Caraça</p>
+</div>
+
+<!-- ══ CRIAR SALA ══════════════════════════════════════════════ -->
+<div id="s-create" class="screen center">
+  <h2 class="title">Criar Sala</h2>
+  <div class="ornament">— ✦ —</div>
+  <div class="card">
+    <div class="field">
+      <label>O teu nome</label>
+      <input id="create-name" type="text" placeholder="Ex: Ana" maxlength="20" />
+    </div>
+    <div class="error-msg" id="create-err"></div>
+    <div class="gap mt2">
+      <button class="btn btn-dark" onclick="go('s-intro')">← Voltar</button>
+      <button class="btn btn-gold" onclick="createRoom()">Criar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ENTRAR NA SALA ══════════════════════════════════════════ -->
+<div id="s-join" class="screen center">
+  <h2 class="title">Entrar na Sala</h2>
+  <div class="ornament">— ✦ —</div>
+  <div class="card">
+    <div class="field">
+      <label>Código da Sala</label>
+      <input id="join-code" type="text" placeholder="Ex: ABCD" maxlength="4" style="text-transform:uppercase;font-size:1.4rem;letter-spacing:0.2em;text-align:center;" />
+    </div>
+    <div class="field">
+      <label>O teu nome</label>
+      <input id="join-name" type="text" placeholder="Ex: João" maxlength="20" />
+    </div>
+    <div class="error-msg" id="join-err"></div>
+    <div class="gap mt2">
+      <button class="btn btn-dark" onclick="go('s-intro')">← Voltar</button>
+      <button class="btn btn-gold" onclick="joinRoom()">Entrar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOBBY ═══════════════════════════════════════════════════ -->
+<div id="s-lobby" class="screen">
+  <h2 class="title">Sala de Espera</h2>
+  <div class="ornament">— ✦ —</div>
+
+  <div class="card">
+    <p style="font-family:'Playfair Display',serif;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:#8a7050;text-align:center;margin-bottom:0.2rem;">Código da Sala</p>
+    <div class="room-code-display" id="lobby-code">----</div>
+    <p class="small" style="margin-bottom:0.8rem;">Partilha este código com os outros jogadores</p>
+
+    <div class="divider"></div>
+
+    <p style="font-family:'Playfair Display',serif;font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:#8a7050;margin-bottom:0.5rem;">Jogadores (<span id="lobby-count">0</span>/30)</p>
+    <div class="players-lobby" id="lobby-players"></div>
+
+    <!-- Configurações (só anfitrião) -->
+    <div id="lobby-host-panel" style="display:none">
+      <div class="divider"></div>
+      <div class="field">
+        <label>Número de Impostores</label>
+        <select id="lobby-impostors">
+          <option value="1">1 impostor</option>
+          <option value="2">2 impostores</option>
+          <option value="3">3 impostores</option>
+          <option value="4">4 impostores</option>
+          <option value="5">5 impostores</option>
+        </select>
+      </div>
+      <button class="btn btn-gold btn-full mt1" id="btn-start" onclick="startGame()">Iniciar Jogo →</button>
+      <p class="small mt1">Precisas de pelo menos 2 jogadores para começar (máx. 30)</p>
+    </div>
+    <div id="lobby-guest-panel" style="display:none">
+      <div class="divider"></div>
+      <p class="waiting-pill">Aguarda que o anfitrião inicie o jogo…</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REVELAR CARTA ════════════════════════════════════════════ -->
+<div id="s-reveal" class="screen center">
+  <h2 class="title" id="reveal-heading">A tua carta</h2>
+  <div class="ornament">— ✦ —</div>
+
+  <div class="flip-container" onclick="flipMyCard()" id="flip-wrap">
+    <div class="flip-inner" id="flip-inner">
+      <div class="flip-face flip-back">
+        <div class="flip-back-pattern"></div>
+        <div class="flip-back-inner">
+          <div class="eye">👁</div>
+          <p>Clica para revelar<br>a tua personagem<br><br><em>Só tu podes ver!</em></p>
+        </div>
+      </div>
+      <div class="flip-face flip-front" id="flip-front">
+        <!-- preenchido por JS -->
+      </div>
+    </div>
+  </div>
+
+  <p class="pulse-hint" id="reveal-hint">Clica na carta para ver</p>
+
+  <div class="mt2" id="btn-revealed-wrap" style="display:none">
+    <button class="btn btn-gold" onclick="confirmReveal()">Pronto, vi a minha carta ✓</button>
+  </div>
+
+  <div class="mt2" style="text-align:center;">
+    <p style="font-family:'Playfair Display',serif;font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(201,162,39,0.5);margin-bottom:0.5rem;">Quem já viu a carta</p>
+    <div class="reveal-status" id="reveal-status"></div>
+  </div>
+
+  <div id="host-reveal-proceed" style="display:none;margin-top:1.5rem;">
+    <p class="waiting-pill" id="host-reveal-msg">Aguarda que todos vejam a carta…</p>
+    <button class="btn btn-green mt2" onclick="setPhase('tasks')" id="btn-goto-tasks" style="display:none">Iniciar Tarefas →</button>
+  </div>
+</div>
+
+<!-- ══ TAREFAS ══════════════════════════════════════════════════ -->
+<div id="s-tasks" class="screen center">
+  <h2 class="title">Tarefas</h2>
+  <div class="ornament">— ✦ —</div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;width:100%;max-width:600px;">
+    <p style="font-family:'Crimson Text',serif;font-size:0.95rem;color:rgba(201,162,39,0.6);text-align:center;" id="task-counter">Tarefa 1 de 6</p>
+    <div class="dots" id="task-dots"></div>
+    <div id="task-area" style="width:100%;"></div>
+
+    <!-- controlos anfitrião -->
+    <div class="gap" id="task-host-controls" style="display:none">
+      <button class="btn btn-dark btn-sm" id="btn-prev-task" onclick="doApi('prev_task')" style="display:none">← Anterior</button>
+      <button class="btn btn-gold btn-sm" id="btn-next-task" onclick="doApi('next_task')">Próxima →</button>
+    </div>
+
+    <div class="gap mt1">
+      <div id="task-host-disc" style="display:none">
+        <button class="btn btn-green" onclick="setPhase('discussion')">Iniciar Discussão ↓</button>
+      </div>
+      <div id="task-guest-wait" style="display:none">
+        <p class="waiting-pill">O anfitrião controla as tarefas…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DISCUSSÃO ═══════════════════════════════════════════════ -->
+<div id="s-discussion" class="screen">
+  <h2 class="title mt2">Discussão</h2>
+  <div class="ornament">— ✦ —</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:0.7rem;width:100%;margin-top:1rem;">
+    <div class="disc-card"><p class="task-num" style="font-family:'Playfair Display',serif;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#8a7050;margin-bottom:0.4rem;">Discussão</p><p class="disc-q">Quem parece suspeito? Justifique com base nas respostas dadas.</p></div>
+    <div class="disc-card"><p class="task-num" style="font-family:'Playfair Display',serif;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#8a7050;margin-bottom:0.4rem;">Observação</p><p class="disc-q">Alguém deu uma resposta estranha ou pouco precisa? Quem foi?</p></div>
+    <div class="disc-card"><p class="task-num" style="font-family:'Playfair Display',serif;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:#8a7050;margin-bottom:0.4rem;">Julgamento</p><p class="disc-q">Chegou a hora de votar. Quem achas que é o impostor?</p></div>
+    <div id="disc-host-btn" style="display:none;margin-top:0.5rem;">
+      <button class="btn btn-gold" onclick="setPhase('voting')">Iniciar Votação →</button>
+    </div>
+    <div id="disc-guest-wait" style="display:none">
+      <p class="waiting-pill">O anfitrião irá iniciar a votação…</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VOTAÇÃO ══════════════════════════════════════════════════ -->
+<div id="s-voting" class="screen center">
+  <h2 class="title">Votação</h2>
+  <div class="ornament">— ✦ —</div>
+  <p style="font-family:'IM Fell English',serif;font-style:italic;color:rgba(253,246,227,0.5);font-size:0.95rem;text-align:center;margin:0.5rem 0 1rem;">Vota em quem achas que é o impostor.</p>
+
+  <div id="vote-panel">
+    <div class="vote-grid" id="vote-grid"></div>
+    <div class="gap mt2"><button class="btn btn-gold" onclick="submitVote()" id="btn-confirm-vote">Confirmar Voto →</button></div>
+    <p class="error-msg" id="vote-err"></p>
+  </div>
+
+  <div id="vote-waiting" style="display:none;text-align:center;margin-top:1rem;">
+    <p style="font-size:2rem;">✓</p>
+    <p style="font-family:'IM Fell English',serif;font-style:italic;color:var(--gold);font-size:1rem;margin-top:0.5rem;">Voto registado.</p>
+    <p class="waiting-pill mt1">Aguarda que todos votem…</p>
+    <div class="reveal-status mt2" id="vote-status" style="justify-content:center;"></div>
+  </div>
+</div>
+
+<!-- ══ RESULTADOS ═══════════════════════════════════════════════ -->
+<div id="s-results" class="screen center">
+  <div class="result-banner" id="result-banner">
+    <div class="result-emoji" id="r-emoji">🎭</div>
+    <div class="result-title" id="r-title">—</div>
+    <div class="result-sub"   id="r-sub">—</div>
+    <div class="divider"></div>
+    <div class="result-reveal" id="r-reveal"></div>
+    <div class="divider"></div>
+    <p style="font-family:'Playfair Display',serif;font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(253,246,227,0.4);margin-bottom:0.5rem;">Votos</p>
+    <div class="tally" id="r-tally" style="max-width:100%;"></div>
+  </div>
+  <div id="results-host-btn" style="display:none;margin-top:1.5rem;">
+    <button class="btn btn-green" onclick="doApi('restart').then(()=>{ session=null; stopPoll(); go('s-intro'); })">↺ Nova Ronda</button>
+  </div>
+  <div id="results-guest-wait" style="display:none;margin-top:1rem;">
+    <p class="waiting-pill">O anfitrião pode iniciar uma nova ronda…</p>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════════
+const API = 'api.php';          // mesmo diretório
+const POLL_MS = 2500;           // intervalo de polling
+
+// ═══════════════════════════════════════════════════════════════
+//  ESTADO LOCAL
+// ═══════════════════════════════════════════════════════════════
+let session    = null;   // { room_id, player_id, name }
+let lastPhase  = null;
+let selectedVote = null;
+let cardFlipped  = false;
+let myCardData   = null;
+let pollTimer    = null;
+let lastUpdated  = 0;
+
+// ═══════════════════════════════════════════════════════════════
+//  NAVEGAÇÃO
+// ═══════════════════════════════════════════════════════════════
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  API
+// ═══════════════════════════════════════════════════════════════
+async function api(action, body = null, method = 'POST') {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  let url = `${API}?action=${action}`;
+  if (method === 'GET' && body) {
+    url += '&' + new URLSearchParams(body).toString();
+  } else if (body) {
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(url, opts);
+  return r.json();
+}
+
+async function doApi(action) {
+  if (!session) return;
+  return api(action, { room_id: session.room_id, player_id: session.player_id });
+}
+
+async function setPhase(phase) {
+  if (!session) return;
+  await api('set_phase', { room_id: session.room_id, player_id: session.player_id, phase });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CRIAR / ENTRAR
+// ═══════════════════════════════════════════════════════════════
+async function createRoom() {
+  const name = document.getElementById('create-name').value.trim();
+  if (!name) { document.getElementById('create-err').textContent = 'Indica o teu nome.'; return; }
+  document.getElementById('create-err').textContent = '';
+  const d = await api('create', { name });
+  if (!d.ok) { document.getElementById('create-err').textContent = d.error; return; }
+  session = { room_id: d.room_id, player_id: d.player_id, name: d.name };
+  startPoll();
+  go('s-lobby');
+}
+
+async function joinRoom() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  const name = document.getElementById('join-name').value.trim();
+  document.getElementById('join-err').textContent = '';
+  if (!code || code.length < 4) { document.getElementById('join-err').textContent = 'Introduz o código de 4 letras.'; return; }
+  if (!name) { document.getElementById('join-err').textContent = 'Indica o teu nome.'; return; }
+  const d = await api('join', { room_id: code, name });
+  if (!d.ok) { document.getElementById('join-err').textContent = d.error; return; }
+  session = { room_id: d.room_id, player_id: d.player_id, name: d.name };
+  startPoll();
+  go('s-lobby');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  POLLING
+// ═══════════════════════════════════════════════════════════════
+function startPoll() {
+  if (pollTimer) clearInterval(pollTimer);
+  poll();
+  pollTimer = setInterval(poll, POLL_MS);
+}
+
+function stopPoll() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function poll() {
+  if (!session) return;
+  try {
+    const d = await api('state', { room_id: session.room_id, player_id: session.player_id }, 'GET');
+    if (!d.ok) return;
+    if (d.updated_at !== lastUpdated || d.phase !== lastPhase) {
+      lastUpdated = d.updated_at;
+      handleState(d);
+    }
+  } catch(e) { /* ignora erros de rede temporários */ }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GESTÃO DE ESTADO
+// ═══════════════════════════════════════════════════════════════
+function handleState(s) {
+  const phaseChanged = s.phase !== lastPhase;
+  lastPhase = s.phase;
+
+  switch (s.phase) {
+    case 'lobby':      renderLobby(s); if(phaseChanged) go('s-lobby');      break;
+    case 'reveal':     renderReveal(s); if(phaseChanged) go('s-reveal');    break;
+    case 'tasks':      renderTasks(s); if(phaseChanged) go('s-tasks');      break;
+    case 'discussion': renderDisc(s);  if(phaseChanged) go('s-discussion'); break;
+    case 'voting':     renderVoting(s); if(phaseChanged) go('s-voting');    break;
+    case 'results':    renderResults(s); if(phaseChanged) go('s-results');  break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER: LOBBY
+// ═══════════════════════════════════════════════════════════════
+function renderLobby(s) {
+  document.getElementById('lobby-code').textContent = s.room_id;
+  document.getElementById('lobby-count').textContent = s.players.length;
+
+  const list = document.getElementById('lobby-players');
+  list.innerHTML = s.players.map(p => `
+    <div class="player-lobby-row">
+      <span>${p.name}</span>
+      ${p.is_host ? '<span class="badge badge-host">Anfitrião</span>' : ''}
+      ${p.is_me   ? '<span class="badge badge-me">Tu</span>' : ''}
+    </div>`).join('');
+
+  document.getElementById('lobby-host-panel').style.display = s.is_host ? 'block' : 'none';
+  document.getElementById('lobby-guest-panel').style.display = s.is_host ? 'none' : 'block';
+  document.getElementById('btn-start').disabled = s.players.length < 2;
+}
+
+async function startGame() {
+  const impostors = document.getElementById('lobby-impostors').value;
+  await api('start', { room_id: session.room_id, player_id: session.player_id, num_impostors: parseInt(impostors) });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER: REVEAL
+// ═══════════════════════════════════════════════════════════════
+function renderReveal(s) {
+  // Guarda a carta do jogador
+  if (s.my_card && !myCardData) {
+    myCardData = s.my_card;
+    buildCardFront(s.my_card);
+  }
+
+  // Estado de quem já revelou
+  const status = document.getElementById('reveal-status');
+  status.innerHTML = s.players.map(p =>
+    `<span class="reveal-chip ${p.has_revealed ? 'done' : ''}">${p.name}${p.has_revealed ? ' ✓' : ''}</span>`
+  ).join('');
+
+  // Botão "pronto" (só se ainda não revelou)
+  document.getElementById('btn-revealed-wrap').style.display =
+    (cardFlipped && !s.has_revealed) ? 'block' : 'none';
+
+  // Anfitrião: ver se todos revelaram
+  const hostPanel = document.getElementById('host-reveal-proceed');
+  const btnGo     = document.getElementById('btn-goto-tasks');
+  if (s.is_host) {
+    hostPanel.style.display = 'block';
+    const allDone = s.players.every(p => p.has_revealed);
+    document.getElementById('host-reveal-msg').style.display = allDone ? 'none' : 'block';
+    btnGo.style.display = allDone ? 'inline-block' : 'none';
+  } else {
+    hostPanel.style.display = 'none';
+  }
+}
+
+function buildCardFront(card) {
+  const front = document.getElementById('flip-front');
+  if (card.type === 'impostor') {
+    front.className = 'flip-face flip-front impostor';
+    front.innerHTML = `
+      <div class="card-label">⚑ A tua função</div>
+      <div style="font-size:2.2rem;margin:0.4rem 0">💀</div>
+      <div class="card-char-name">IMPOSTOR</div>
+      <div class="clue-box"><strong>A tua dica:</strong>${card.clue}</div>
+      <div class="card-objective"><strong>O teu objectivo:</strong>Usa a dica. Dá respostas plausíveis mas vagas. Não levantes suspeitas.<br>Se ninguém te descobrir, <strong>ganhas</strong>.</div>`;
+  } else {
+    front.className = 'flip-face flip-front';
+    front.innerHTML = `
+      <div class="card-label">A tua personagem</div>
+      <div style="font-size:2rem;margin:0.4rem 0">🎭</div>
+      <div class="card-char-name">${card.name}</div>
+      <div class="card-char-desc">${card.desc}</div>
+      <div class="card-objective"><strong>O teu objectivo:</strong>Responde correctamente às tarefas. Descobre quem está a fingir.</div>`;
+  }
+}
+
+function flipMyCard() {
+  if (cardFlipped) return;
+  cardFlipped = true;
+  document.getElementById('flip-inner').classList.add('flipped');
+  document.getElementById('reveal-hint').style.display = 'none';
+  if (lastPhase === 'reveal') {
+    document.getElementById('btn-revealed-wrap').style.display = 'block';
+  }
+}
+
+async function confirmReveal() {
+  document.getElementById('btn-revealed-wrap').style.display = 'none';
+  await doApi('reveal');
+  await poll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER: TASKS
+// ═══════════════════════════════════════════════════════════════
+function renderTasks(s) {
+  const idx  = s.current_task;
+  const task = s.task;
+  const n    = s.num_tasks;
+
+  document.getElementById('task-counter').textContent = `Tarefa ${idx + 1} de ${n}`;
+
+  // dots
+  const dots = document.getElementById('task-dots');
+  dots.innerHTML = Array.from({length: n}, (_, i) =>
+    `<div class="dot ${i < idx ? 'done' : i === idx ? 'active' : ''}"></div>`
+  ).join('');
+
+  // Qual jogador responde (roda pelos jogadores)
+  const playerIdx = idx % s.players.length;
+  const player    = s.players[playerIdx];
+  document.getElementById('task-area').innerHTML = `
+    <div class="task-card">
+      <div class="task-num">Tarefa ${task.num}</div>
+      <div class="task-text">${task.text}</div>
+      <div class="task-player-badge">👤 ${player.name}${player.is_me ? ' (tu)' : ''}</div>
+    </div>`;
+
+  // Controlos
+  const hostCtrl = document.getElementById('task-host-controls');
+  const hostDisc = document.getElementById('task-host-disc');
+  const guestWait= document.getElementById('task-guest-wait');
+
+  if (s.is_host) {
+    hostCtrl.style.display = 'flex';
+    hostDisc.style.display = 'block';
+    guestWait.style.display= 'none';
+    document.getElementById('btn-prev-task').style.display = idx > 0 ? 'inline-block' : 'none';
+    document.getElementById('btn-next-task').disabled = idx >= n - 1;
+  } else {
+    hostCtrl.style.display = 'none';
+    hostDisc.style.display = 'none';
+    guestWait.style.display= 'block';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER: DISCUSSION
+// ═══════════════════════════════════════════════════════════════
+function renderDisc(s) {
+  document.getElementById('disc-host-btn').style.display  = s.is_host ? 'block' : 'none';
+  document.getElementById('disc-guest-wait').style.display= s.is_host ? 'none' : 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER: VOTING
+// ═══════════════════════════════════════════════════════════════
+function renderVoting(s) {
+  if (s.my_vote) {
+    // já votei
+    document.getElementById('vote-panel').style.display   = 'none';
+    document.getElementById('vote-waiting').style.display = 'block';
+    // mostrar quem já votou
+    const vs = document.getElementById('vote-status');
+    vs.innerHTML = s.players.map(p =>
+      `<span class="reveal-chip ${p.voted ? 'done' : ''}">${p.name}${p.voted ? ' ✓' : ''}</span>`
+    ).join('');
+    return;
+  }
+
+  document.getElementById('vote-panel').style.display   = 'block';
+  document.getElementById('vote-waiting').style.display = 'none';
+
+  const grid = document.getElementById('vote-grid');
+  grid.innerHTML = s.players.map(p => {
+    if (p.is_me) return '';
+    return `<button class="vote-btn ${selectedVote === p.id ? 'selected' : ''}"
+      onclick="selectVote('${p.id}', this)">${p.name}</button>`;
+  }).join('');
+}
+
+function selectVote(id, el) {
+  document.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedVote = id;
+}
+
+async function submitVote() {
+  if (!selectedVote) { document.getElementById('vote-err').textContent = 'Selecciona um jogador.'; return; }
+  document.getElementById('vote-err').textContent = '';
+  const d = await api('vote', { room_id: session.room_id, player_id: session.player_id, voted_for: selectedVote });
+  if (!d.ok) { document.getElementById('vote-err').textContent = d.error; return; }
+  document.getElementById('vote-panel').style.display   = 'none';
+  document.getElementById('vote-waiting').style.display = 'block';
+  await poll();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER: RESULTS
+// ═══════════════════════════════════════════════════════════════
+function renderResults(s) {
+  if (!s.results) return;
+  const r = s.results;
+
+  const banner = document.getElementById('result-banner');
+  if (r.impostor_eliminated) {
+    banner.className = 'result-banner';
+    document.getElementById('r-emoji').textContent = '🏆';
+    document.getElementById('r-title').textContent = 'Inocentes Vencem!';
+    document.getElementById('r-sub').textContent   = 'O impostor foi descoberto e expulso.';
+  } else {
+    banner.className = 'result-banner imp';
+    document.getElementById('r-emoji').textContent = '💀';
+    document.getElementById('r-title').textContent = 'O Impostor Venceu!';
+    document.getElementById('r-sub').textContent   = 'Conseguiu enganar toda a gente…';
+  }
+
+  document.getElementById('r-reveal').innerHTML = `
+    <div style="margin-bottom:0.7rem;">
+      <span style="font-family:'Playfair Display',serif;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(253,246,227,0.4);">Personagem da ronda</span><br>
+      <span style="font-size:1.1rem;color:#e8c55a;">${r.character.name}</span><br>
+      <span style="font-size:0.88rem;font-style:italic;color:rgba(253,246,227,0.55);">${r.character.desc}</span>
+    </div>
+    <div style="margin-bottom:0.7rem;">
+      <span style="font-family:'Playfair Display',serif;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(253,246,227,0.4);">O${r.impostors.length > 1 ? 's' : ''} Impostor${r.impostors.length > 1 ? 'es' : ''}</span><br>
+      <span style="color:#e05050;">${r.impostors.join(', ')}</span>
+    </div>
+    <div>
+      <span style="font-family:'Playfair Display',serif;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(253,246,227,0.4);">Eliminado</span><br>
+      <span>${r.eliminated.join(', ')}</span>
+    </div>`;
+
+  // tally
+  const max = Math.max(...r.tally.map(t => t.count), 1);
+  document.getElementById('r-tally').innerHTML = r.tally.map(t => `
+    <div class="tally-row">
+      <span class="tally-name">${t.name}</span>
+      <div class="tally-bar-wrap"><div class="tally-bar" style="width:${(t.count/max)*100}%"></div></div>
+      <span class="tally-count">${t.count}</span>
+    </div>`).join('');
+
+  document.getElementById('results-host-btn').style.display  = s.is_host ? 'block' : 'none';
+  document.getElementById('results-guest-wait').style.display= s.is_host ? 'none' : 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NOVA RONDA (para anfitrião)
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('results-host-btn').querySelector('button').onclick = async function() {
+  await doApi('restart');
+  // reset state local
+  myCardData   = null;
+  cardFlipped  = false;
+  selectedVote = null;
+  lastPhase    = null;
+  // volta ao lobby
+  await poll();
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  ENTER nas inputs
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('create-name').addEventListener('keydown', e => { if (e.key==='Enter') createRoom(); });
+document.getElementById('join-code').addEventListener('keydown',   e => { if (e.key==='Enter') document.getElementById('join-name').focus(); });
+document.getElementById('join-code').addEventListener('input',     e => { e.target.value = e.target.value.toUpperCase(); });
+document.getElementById('join-name').addEventListener('keydown',   e => { if (e.key==='Enter') joinRoom(); });
+</script>
+</body>
+</html>
