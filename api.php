@@ -121,6 +121,7 @@ switch ($action) {
             'num_impostors'  => 1,
             'shared_character' => null,
             'current_task'   => 0,
+            'tiebreak_round' => 0,
             'players'        => [
                 $pid => ['name' => $name, 'is_impostor' => false, 'has_revealed' => false, 'vote' => null]
             ],
@@ -254,10 +255,82 @@ switch ($action) {
         foreach ($room['players'] as $p) {
             if ($p['vote'] === null) { $all_voted = false; break; }
         }
-        if ($all_voted) $room['phase'] = 'results';
+
+        if ($all_voted) {
+            // Verificar empate
+            $counts = [];
+            foreach ($room['player_order'] as $id) $counts[$id] = 0;
+            foreach ($room['players'] as $p) {
+                if ($p['vote'] && isset($counts[$p['vote']])) $counts[$p['vote']]++;
+            }
+            $max = max($counts);
+            $leaders = array_keys(array_filter($counts, fn($v) => $v === $max));
+
+            if (count($leaders) > 1) {
+                // EMPATE — nova ronda de tarefas
+                $room['phase'] = 'tiebreak';
+                $room['tiebreak_round'] = ($room['tiebreak_round'] ?? 0) + 1;
+                // Reset votos
+                foreach ($room['players'] as &$p) { $p['vote'] = null; }
+                unset($p);
+                $room['current_task'] = 0;
+            } else {
+                $room['phase'] = 'results';
+            }
+        }
 
         saveRoom($room);
         resp(true, null, ['all_voted' => $all_voted]);
+
+    // ── Expulsar jogador (anfitrião) ─────────────────────────
+    case 'kick':
+        $room_id   = $body['room_id']   ?? '';
+        $pid       = $body['player_id'] ?? '';
+        $kick_id   = $body['kick_id']   ?? '';
+        $room      = loadRoom($room_id);
+        if (!$room || $room['host_id'] !== $pid) resp(false, 'Sem permissão.');
+        if ($kick_id === $pid) resp(false, 'Não podes expulsar-te a ti próprio.');
+        if (!isset($room['players'][$kick_id])) resp(false, 'Jogador não encontrado.');
+        
+        unset($room['players'][$kick_id]);
+        $room['player_order'] = array_values(array_filter($room['player_order'], fn($id) => $id !== $kick_id));
+        saveRoom($room);
+        resp(true);
+
+    // ── Sair da sala ─────────────────────────────────────────
+    case 'leave':
+        $room_id = $body['room_id']   ?? '';
+        $pid     = $body['player_id'] ?? '';
+        $room    = loadRoom($room_id);
+        if (!$room) resp(false, 'Sala não encontrada.');
+        
+        // Se for o anfitrião e houver mais jogadores, transfere para o próximo
+        if ($room['host_id'] === $pid && count($room['players']) > 1) {
+            $remaining = array_filter($room['player_order'], fn($id) => $id !== $pid);
+            $room['host_id'] = reset($remaining);
+        }
+        
+        unset($room['players'][$pid]);
+        $room['player_order'] = array_values(array_filter($room['player_order'], fn($id) => $id !== $pid));
+        
+        // Se não sobrar ninguém, apaga a sala
+        if (count($room['players']) === 0) {
+            @unlink(roomFile($room_id));
+            resp(true, null, ['deleted' => true]);
+        }
+        
+        saveRoom($room);
+        resp(true);
+
+    // ── Eliminar sala (anfitrião) ────────────────────────────
+    case 'delete':
+        $room_id = $body['room_id']   ?? '';
+        $pid     = $body['player_id'] ?? '';
+        $room    = loadRoom($room_id);
+        if (!$room || $room['host_id'] !== $pid) resp(false, 'Sem permissão.');
+        
+        @unlink(roomFile($room_id));
+        resp(true);
 
     // ── Reiniciar sala (anfitrião) ───────────────────────────
     case 'restart':
@@ -294,6 +367,24 @@ switch ($action) {
             $my_card = $me['is_impostor']
                 ? ['type' => 'impostor', 'clue' => $char['clue']]
                 : ['type' => 'innocent', 'name' => $char['name'], 'desc' => $char['desc']];
+        }
+
+        // Tiebreak info
+        $tiebreak_info = null;
+        if ($room['phase'] === 'tiebreak' && ($room['tiebreak_round'] ?? 0) > 0) {
+            // Calcular quem ficou empatado
+            $counts = [];
+            foreach ($room['player_order'] as $id) $counts[$id] = 0;
+            foreach ($room['players'] as $p) {
+                if ($p['vote'] && isset($counts[$p['vote']])) $counts[$p['vote']]++;
+            }
+            $max = max($counts);
+            $tied_ids = array_keys(array_filter($counts, fn($v) => $v === $max));
+            $tied_names = array_map(fn($id) => $room['players'][$id]['name'], $tied_ids);
+            $tiebreak_info = [
+                'round' => $room['tiebreak_round'],
+                'tied_players' => $tied_names,
+            ];
         }
 
         // Resultados (só na fase results)
@@ -345,6 +436,8 @@ switch ($action) {
             'results'      => $results,
             'updated_at'   => $room['updated_at'],
             'num_impostors' => $room['num_impostors'],
+            'tiebreak_round' => $room['tiebreak_round'] ?? 0,
+            'tiebreak_info' => $tiebreak_info,
         ]);
 
     default:
